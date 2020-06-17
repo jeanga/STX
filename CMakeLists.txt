@@ -246,7 +246,10 @@ else()
   add_library(stx STATIC ${STX_SRCS})
 endif()
 
-target_include_directories(stx PUBLIC include)
+target_include_directories(stx PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  
+    $<INSTALL_INTERFACE:include>
+)
 target_compile_options(stx PRIVATE ${STX_FLAGS} ${STX_WARNING_FLAGS})
 target_compile_definitions(stx PUBLIC ${STX_COMPILER_DEFS})
 target_link_libraries(stx ${STX_LIB_DEPENDENCIES})
@@ -258,6 +261,56 @@ endif()
 if(ANDROID)
   target_link_libraries(stx ${LibAtomic})
 endif()
+
+# ===============================================
+#
+# === Library Install
+#
+# ===============================================
+
+set(PUBLIC_HEADERS
+  stx/backtrace.h
+  stx/common.h
+  stx/config.h
+  stx/option.h
+  stx/panic.h
+  stx/report.h
+  stx/result.h
+  stx/source_location.h
+  stx/internal/option_result.h
+  stx/internal/panic_helpers.h
+  stx/internal/try.h
+  stx/panic/hook.h
+  stx/panic/handlers/print.h
+  stx/panic/handlers/abort/abort.h
+  stx/panic/handlers/default/default.h
+  stx/panic/handlers/halt/halt.h
+)
+
+install(
+    TARGETS stx
+    EXPORT stx
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+# Headers makes relative includes so directory structure must be kept
+foreach(HEADER ${PUBLIC_HEADERS})
+    get_filename_component(HEADER_DIR ${HEADER} DIRECTORY)
+    install(
+        FILES include/${HEADER}
+        DESTINATION include/${HEADER_DIR}
+    )
+endforeach()
+
+install(
+    EXPORT stx
+    DESTINATION share/stx
+    FILE stxConfig.cmake
+    NAMESPACE stx::
+)
+
 
 # ===============================================
 #
